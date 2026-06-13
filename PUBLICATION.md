@@ -59,15 +59,30 @@ Use this split:
 This lets the same checkout build and run internally while also serving as the
 AGPL source publication for the modified editor stack.
 
-## Remaining Release Steps
+## Publication Status
 
-1. Run a tracked-file and history secret scan before the first public push.
-2. If publishing from the existing Git history, review any findings from old
-   commits; otherwise publish from a fresh repository initialized from this
-   pruned working tree.
-3. Include AGPLv3 license text, attribution notices, and source-offer notes for
-   modified AGPL components.
-4. Keep the repository private until the scan is clean.
+The initial public repository was published from a fresh Git history initialized
+from the pruned runtime tree. The old local history is intentionally not part of
+the public repository.
+
+Before the initial public push, the current source tree was checked with:
+
+- `gitleaks dir` against the pruned working tree.
+- `node --check editor-demo-gateway/server.js`.
+- `docker compose build --no-cache` with a placeholder local
+  `OKD_JWT_SECRET`.
+
+## Ongoing Release Hygiene
+
+1. Run a tracked-file secret scan before public pushes that add configuration,
+   scripts, logs, generated files, or binary artifacts.
+2. Keep `.env`, `.cloudflared`, generated deployment packages, local document
+   sessions, logs, and Docker override files out of Git.
+3. Do not import the old local Git history into the public repository unless it
+   is rewritten and scanned separately.
+4. When adding new upstream source trees or runtime patches, update `NOTICE.md`
+   and verify that the committed source still corresponds to the deployed
+   modified AGPL runtime.
 
 Useful upstream references:
 

@@ -54,9 +54,12 @@ runtime while still being usable by the internal deployment. Keep real secrets,
 Cloudflare credentials, machine-specific Compose overrides, logs, generated
 packages, and runtime document files outside Git.
 
-## Licensing
+## Licensing And Notices
 
 This repository keeps the runtime overlay aligned with the Euro-Office AGPLv3
-base. The image build context copies only the runtime files needed by the current
+base. The full AGPLv3 license text is available in `LICENSE`, and public
+attribution notes are in `NOTICE.md`.
+
+The image build context copies only the runtime files needed by the current
 deployment; unrelated legacy source trees are not part of this public runtime
 source tree.
