@@ -1,0 +1,14 @@
+.env
+.env.*
+!.env.example
+.edge-*
+*.log
+/edge-log-shot.png
+okaidocs-*.png
+okai-docs-*.png
+.cloudflared/
+docker-compose.override.yml
+docker-compose.*.override.yml
+editor-demo-gateway/files/dev-sessions/
+deploy-package/
+okaidocs-deploy-package-*.tar.sha256

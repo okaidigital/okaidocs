@@ -1,0 +1,107 @@
+ARG OKD_EDITOR_BASE_IMAGE=ghcr.io/euro-office/documentserver:v9.3.1
+FROM ${OKD_EDITOR_BASE_IMAGE}
+
+USER root
+
+RUN apt-get update \
+  && apt-get install -y --no-install-recommends nodejs npm \
+  && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /opt/okai-build/server
+
+COPY server/Common/package.json server/Common/npm-shrinkwrap.json ./Common/
+COPY server/DocService/package.json server/DocService/npm-shrinkwrap.json ./DocService/
+COPY server/FileConverter/package.json server/FileConverter/npm-shrinkwrap.json ./FileConverter/
+
+RUN npm ci --omit=dev --prefix ./Common \
+  && npm ci --omit=dev --prefix ./DocService \
+  && npm ci --omit=dev --prefix ./FileConverter
+
+COPY server/Common ./Common
+COPY server/DocService ./DocService
+COPY server/FileConverter ./FileConverter
+COPY server/branding/welcome/index.html /opt/okai-build/branding/welcome/index.html
+COPY server/branding/info/index.html /opt/okai-build/branding/info/index.html
+COPY server/branding/welcome/docker.html /opt/okai-build/branding/welcome/docker.html
+COPY web-apps/apps/documenteditor/main/locale/pt.json /opt/okai-build/patches/documenteditor-pt.json
+COPY web-apps/apps/pdfeditor/main/locale/pt.json /opt/okai-build/patches/pdfeditor-pt.json
+COPY web-apps/apps/presentationeditor/main/locale/pt.json /opt/okai-build/patches/presentationeditor-pt.json
+COPY web-apps/apps/spreadsheeteditor/main/locale/pt.json /opt/okai-build/patches/spreadsheeteditor-pt.json
+COPY web-apps/apps/api/documents/api.js /opt/okai-build/patches/api.js
+COPY web-apps/apps/api/documents/cache-scripts.html /opt/okai-build/patches/cache-scripts.html
+COPY web-apps/apps/api/documents/preload.html /opt/okai-build/patches/preload.html
+COPY server/patches/ribbon-icons /opt/okai-build/patches/ribbon-icons
+
+RUN set -eu; \
+  engine_root="$(find /var/www -maxdepth 2 -type d -name documentserver -print -quit)"; \
+  test -n "$engine_root"; \
+  server_root="$engine_root/server"; \
+  example_root="$(dirname "$engine_root")/documentserver-example"; \
+  mkdir -p \
+    "$server_root/Common" \
+    "$server_root/DocService" \
+    "$server_root/FileConverter" \
+    "$server_root/welcome" \
+    "$server_root/info" \
+    "$example_root/welcome" \
+    "$engine_root/web-apps/apps/documenteditor/main/locale" \
+    "$engine_root/web-apps/apps/pdfeditor/main/locale" \
+    "$engine_root/web-apps/apps/presentationeditor/main/locale" \
+    "$engine_root/web-apps/apps/spreadsheeteditor/main/locale" \
+    "$engine_root/web-apps/apps/api/documents"; \
+  cp -a ./Common/. "$server_root/Common/"; \
+  cp -a ./DocService/. "$server_root/DocService/"; \
+  cp -a ./FileConverter/. "$server_root/FileConverter/"; \
+  cp -f /opt/okai-build/branding/welcome/index.html "$server_root/welcome/index.html"; \
+  cp -f /opt/okai-build/branding/info/index.html "$server_root/info/index.html"; \
+  cp -f /opt/okai-build/branding/welcome/docker.html "$example_root/welcome/docker.html"; \
+  merge_locale() { \
+    target="$1"; \
+    patch="$2"; \
+    node -e 'const fs = require("fs"); const [targetPath, patchPath] = process.argv.slice(1); const isObject = (value) => value && typeof value === "object" && !Array.isArray(value); const merge = (base, patch) => { if (!isObject(base) || !isObject(patch)) return patch; const result = { ...base }; for (const [key, value] of Object.entries(patch)) result[key] = key in result ? merge(result[key], value) : value; return result; }; const baseLocale = JSON.parse(fs.readFileSync(targetPath, "utf8")); const patchLocale = JSON.parse(fs.readFileSync(patchPath, "utf8")); fs.writeFileSync(targetPath, JSON.stringify(merge(baseLocale, patchLocale), null, 2) + "\n");' "$target" "$patch"; \
+  }; \
+  merge_locale "$engine_root/web-apps/apps/documenteditor/main/locale/pt.json" /opt/okai-build/patches/documenteditor-pt.json; \
+  merge_locale "$engine_root/web-apps/apps/pdfeditor/main/locale/pt.json" /opt/okai-build/patches/pdfeditor-pt.json; \
+  merge_locale "$engine_root/web-apps/apps/presentationeditor/main/locale/pt.json" /opt/okai-build/patches/presentationeditor-pt.json; \
+  merge_locale "$engine_root/web-apps/apps/spreadsheeteditor/main/locale/pt.json" /opt/okai-build/patches/spreadsheeteditor-pt.json; \
+  cp -f /opt/okai-build/patches/api.js "$engine_root/web-apps/apps/api/documents/api.js"; \
+  cp -f /opt/okai-build/patches/api.js "$engine_root/web-apps/apps/api/documents/api.js.tpl"; \
+  cp -f /opt/okai-build/patches/cache-scripts.html "$engine_root/web-apps/apps/api/documents/cache-scripts.html"; \
+  cp -f /opt/okai-build/patches/preload.html "$engine_root/web-apps/apps/api/documents/preload.html"; \
+  for editor in documenteditor spreadsheeteditor presentationeditor pdfeditor; do \
+    css_file="$engine_root/web-apps/apps/$editor/main/resources/css/app.css"; \
+    patch_file="/opt/okai-build/patches/ribbon-icons/$editor.css"; \
+    test -f "$css_file"; \
+    test -f "$patch_file"; \
+    printf '\n/* Okai Docs ribbon icon overrides */\n' >> "$css_file"; \
+    cat "$patch_file" >> "$css_file"; \
+    gzip -kf "$css_file"; \
+    chown ds:ds "$css_file" "$css_file.gz"; \
+  done; \
+  chown -R ds:ds "$server_root/Common" "$server_root/DocService" "$server_root/FileConverter"; \
+  chown ds:ds \
+    "$engine_root/web-apps/apps/documenteditor/main/locale/pt.json" \
+    "$engine_root/web-apps/apps/pdfeditor/main/locale/pt.json" \
+    "$engine_root/web-apps/apps/presentationeditor/main/locale/pt.json" \
+    "$engine_root/web-apps/apps/spreadsheeteditor/main/locale/pt.json" \
+    "$engine_root/web-apps/apps/api/documents/api.js" \
+    "$engine_root/web-apps/apps/api/documents/api.js.tpl" \
+    "$engine_root/web-apps/apps/api/documents/cache-scripts.html" \
+    "$engine_root/web-apps/apps/api/documents/preload.html"; \
+  sed -i 's/{{PRODUCT_VERSION}}/9.3.1/g' \
+    "$engine_root/web-apps/apps/api/documents/api.js" \
+    "$engine_root/web-apps/apps/api/documents/api.js.tpl"; \
+  rm -rf \
+    "$server_root/info/img" \
+    "$server_root/welcome/img" \
+    "$example_root/welcome/img" \
+    "$engine_root/web-apps/apps/visioeditor" \
+    "$engine_root/sdkjs/visio"; \
+  find "$engine_root/web-apps/apps" -path '*/locale/*.json' ! -name 'pt.json' -delete; \
+  for help_dir in $(find "$engine_root/web-apps/apps" -type d -path '*/resources/help'); do \
+    find "$help_dir" -mindepth 1 -maxdepth 1 ! -name pt -exec rm -rf {} +; \
+  done; \
+  find "$server_root" -type f \( -iname '*.md' -o -iname '*.markdown' -o -iname 'README*' -o -iname 'CHANGELOG*' \) -not -path '*/node_modules/*' -delete; \
+  sed -i "s#^command=.*DocService/docservice\$#command=/usr/bin/node $server_root/DocService/sources/server.js#" /etc/supervisor/conf.d/ds-docservice.conf; \
+  sed -i "s#^command=.*FileConverter/converter\$#command=/usr/bin/node $server_root/FileConverter/sources/convertermaster.js#" /etc/supervisor/conf.d/ds-converter.conf; \
+  rm -rf /opt/okai-build

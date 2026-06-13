@@ -1,0 +1,542 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "urn:okaidocs:config:superset:1",
+  "title": "Config Patch Schema (Superset for Admin and Tenant)",
+  "description": "Superset schema with x-scope markers. Use at runtime to derive per-scope schemas.",
+  "type": "object",
+  "additionalProperties": false,
+  "$defs": {
+    "cron6": {
+      "type": "string",
+      "pattern": "^\\s*\\S+(?:\\s+\\S+){5}\\s*$",
+      "errorMessage": "Cron expression must have exactly 6 parts"
+    },
+    "passlength": {
+      "type": "string",
+      "pattern": "^.{8,128}$"
+    },
+    "passdigit": {
+      "type": "string",
+      "pattern": ".*[0-9].*"
+    },
+    "passupper": {
+      "type": "string",
+      "pattern": ".*[A-Z].*"
+    },
+    "passspecial": {
+      "type": "string",
+      "pattern": ".*[!@#$%^&*()_+\\-=\\[\\]{};':\"\\\\|,.<>\\/?].*"
+    },
+    "passallowedchars": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9!@#$%^&*()_+\\-=\\[\\]{};':\"\\\\|,.<>\\/?]+$",
+      "errorMessage": "contain only uppercase letters (A-Z), lowercase letters (a-z), digits (0-9), and special characters"
+    }
+  },
+  "properties": {
+    "aiSettings": {
+      "type": "object",
+      "description": "AI integration settings for document processing and AI-powered features",
+      "additionalProperties": false,
+      "x-scope": ["admin", "tenant"],
+      "properties": {
+        "version": {
+          "type": "integer",
+          "description": "AI settings schema version",
+          "minimum": 1,
+          "x-scope": ["admin", "tenant"]
+        },
+        "timeout": {
+          "type": "string",
+          "description": "Default timeout for AI API requests (e.g., '5m', '30s')",
+          "x-scope": ["admin", "tenant"]
+        },
+        "proxy": {
+          "type": "string",
+          "description": "Proxy URL for AI API requests",
+          "x-scope": ["admin", "tenant"]
+        },
+        "allowedCorsOrigins": {
+          "type": "array",
+          "description": "Array of allowed CORS origins for AI API requests",
+          "x-scope": ["admin", "tenant"],
+          "items": {
+            "type": "string",
+            "description": "Allowed origin URL"
+          }
+        },
+        "actions": {
+          "type": "object",
+          "description": "Available AI actions/features configuration",
+          "additionalProperties": true,
+          "x-scope": ["admin", "tenant"]
+        },
+        "providers": {
+          "type": "object",
+          "description": "AI service providers configuration",
+          "additionalProperties": true,
+          "x-scope": ["admin", "tenant"]
+        },
+        "customProviders": {
+          "type": "object",
+          "description": "Custom AI service providers configuration",
+          "additionalProperties": true,
+          "x-scope": ["admin", "tenant"]
+        },
+        "models": {
+          "type": "array",
+          "description": "Active AI models configuration",
+          "x-scope": ["admin", "tenant"],
+          "items": {
+            "type": "object",
+            "additionalProperties": true
+          }
+        }
+      }
+    },
+    "services": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "CoAuthoring": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "expire": {
+              "type": "object",
+              "additionalProperties": false,
+              "x-scope": ["admin", "tenant"],
+              "properties": {
+                "filesCron": {"$ref": "#/$defs/cron6", "x-scope": "admin"},
+                "documentsCron": {"$ref": "#/$defs/cron6", "x-scope": "admin"},
+                "files": {"type": "integer", "minimum": 0, "x-scope": "admin"},
+                "filesremovedatonce": {"type": "integer", "minimum": 0, "x-scope": "admin"},
+                "sessionidle": {"type": "string", "x-scope": ["admin", "tenant"]},
+                "sessionabsolute": {"type": "string", "x-scope": ["admin", "tenant"]}
+              }
+            },
+            "request-filtering-agent": {
+              "type": "object",
+              "additionalProperties": false,
+              "x-scope": ["admin", "tenant"],
+              "properties": {
+                "allowPrivateIPAddress": {
+                  "type": "boolean",
+                  "description": "Whether to allow requests from private IP addresses"
+                },
+                "allowMetaIPAddress": {
+                  "type": "boolean",
+                  "description": "Whether to allow requests from meta IP addresses"
+                }
+              }
+            },
+            "autoAssembly": {
+              "type": "object",
+              "additionalProperties": false,
+              "x-scope": ["admin", "tenant"],
+              "properties": {
+                "step": {"type": "string", "enum": ["1m", "5m", "10m", "15m", "30m"]}
+              }
+            },
+            "ipfilter": {
+              "type": "object",
+              "additionalProperties": false,
+              "x-scope": ["admin", "tenant"],
+              "properties": {
+                "rules": {
+                  "type": "array",
+                  "description": "Array of IP filtering rules",
+                  "items": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": ["address", "allowed"],
+                    "properties": {
+                      "address": {
+                        "type": "string",
+                        "description": "IP address, CIDR notation, or '*' for all (e.g., '192.168.1.0/24', '10.0.0.1', '*')"
+                      },
+                      "allowed": {
+                        "type": "boolean",
+                        "description": "Whether this address/range is allowed (true) or denied (false)"
+                      }
+                    }
+                  }
+                },
+                "useforrequest": {
+                  "type": "boolean",
+                  "description": "Whether to use IP filtering for requests"
+                },
+                "errorcode": {
+                  "type": "integer",
+                  "minimum": 400,
+                  "maximum": 599,
+                  "description": "HTTP error code to return when IP is not allowed"
+                }
+              }
+            },
+            "sql": {
+              "type": "object",
+              "description": "Database connection settings for the CoAuthoring service",
+              "additionalProperties": false,
+              "x-scope": "admin",
+              "properties": {
+                "type": {
+                  "type": "string",
+                  "description": "Database type (e.g., 'mysql', 'mariadb', 'mssql', 'postgres', 'dameng', 'oracle')",
+                  "examples": ["postgres"]
+                },
+                "dbHost": {
+                  "type": "string",
+                  "description": "Database host name or IP address",
+                  "examples": ["localhost"]
+                },
+                "dbPort": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 65535,
+                  "description": "Database TCP port",
+                  "examples": [5432]
+                },
+                "dbName": {
+                  "type": "string",
+                  "description": "Database name",
+                  "examples": ["okaidocs"]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "FileConverter": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "converter": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "maxDownloadBytes": {"type": "integer", "minimum": 0, "maximum": 10485760000, "x-scope": ["admin", "tenant"]},
+            "signingKeyStorePath": {
+              "type": "string",
+              "description": "Legacy. Path to signing certificate file. Use signing.keyStorePath instead.",
+              "x-scope": "admin"
+            },
+            "signing": {
+              "type": "object",
+              "additionalProperties": false,
+              "x-scope": "admin",
+              "description": "Signing settings. keyStorePath takes priority over legacy signingKeyStorePath. Cloud provider detected by awsKms.keyId.",
+              "properties": {
+                "keyStorePath": {
+                  "type": "string",
+                  "description": "Path to signing certificate. P12/PFX for local x2t, PEM chain for cloud signing."
+                },
+                "meta": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "description": "Signature metadata fields embedded in the PDF digital signature.",
+                  "properties": {
+                    "reason": {"type": "string", "description": "Purpose of signing (e.g. Approved)."},
+                    "name": {"type": "string", "description": "Signer name."},
+                    "location": {"type": "string", "description": "Signing location."},
+                    "contactInfo": {"type": "string", "description": "Contact details (URL or email)."}
+                  }
+                },
+                "awsKms": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "description": "AWS KMS (or compatible) settings. Set keyId to enable.",
+                  "properties": {
+                    "endpoint": {"type": "string", "description": "KMS endpoint URL. Allows alternative KMS-compatible services."},
+                    "keyId": {"type": "string", "description": "KMS key ID or ARN. If set, AWS KMS signing is active."},
+                    "accessKeyId": {"type": "string", "description": "AWS access key. Empty = default credential chain."},
+                    "secretAccessKey": {"type": "string", "description": "AWS secret access key."}
+                  }
+                },
+                "csc": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "description": "CSC API v2 (ETSI TS 119 432) settings. Set baseUrl to enable.",
+                  "properties": {
+                    "baseUrl": {"type": "string", "description": "CSC API base URL. If set, CSC signing is active."},
+                    "tokenUrl": {"type": "string", "description": "OAuth2 token endpoint."},
+                    "clientId": {"type": "string", "description": "OAuth2 client ID."},
+                    "clientSecret": {"type": "string", "description": "OAuth2 client secret."},
+                    "grantType": {"type": "string", "description": "Optional. OAuth2 grant type: '' (auto-detect), 'password', or 'client_credentials'. Empty selects based on presence of username/password."},
+                    "clientAuth": {"type": "string", "description": "Optional. How client authenticates to token endpoint: '' (body), 'basic', 'body', or 'both'."},
+                    "tokenBodyFormat": {"type": "string", "description": "Optional. Token request body format: 'form' (default, RFC 6749) or 'json'."},
+                    "username": {"type": "string", "description": "Optional. Username for password grant type."},
+                    "password": {"type": "string", "description": "Optional. Password for password grant type."},
+                    "credentialId": {"type": "string", "description": "Optional. Signing credential ID. Auto-discovered via credentials/list when empty."},
+                    "clientData": {"type": "string", "description": "Optional. Provider-specific clientData for credentials/list (e.g. eSeal credential type)."},
+                    "scope": {"type": "string", "description": "Optional. OAuth2 scope (e.g. 'service')."},
+                    "audience": {"type": "string", "description": "Optional. OAuth2 audience parameter."}
+                  }
+                }
+              }
+            },
+            "spawnOptions": {
+              "type": "object",
+              "additionalProperties": true,
+              "x-scope": "admin",
+              "properties": {
+                "env": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "properties": {
+                    "SIGNING_KEYSTORE_PASSPHRASE": {
+                      "type": "string",
+                      "description": "Passphrase for the PKCS#12 keystore file"
+                    }
+                  }
+                }
+              }
+            },
+            "inputLimits": {
+              "type": "array",
+              "x-scope": ["admin", "tenant"],
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": ["type"],
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "description": "File types this limit applies to (e.g., 'docx;dotx;docm;dotm')"
+                  },
+                  "zip": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "properties": {
+                      "uncompressed": {
+                        "type": "string",
+                        "description": "Maximum uncompressed size (e.g., '50MB', '300MB')"
+                      },
+                      "template": {
+                        "type": "string",
+                        "description": "Template pattern for file matching (e.g., '*.xml')"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "wopi": {
+      "type": "object",
+      "additionalProperties": false,
+      "x-scope": ["admin", "tenant"],
+      "properties": {
+        "enable": {"type": "boolean"},
+        "publicKey": {"type": "string"},
+        "refreshLockInterval": {
+          "type": "string",
+          "pattern": "^(\\d+[smhd]|\\d+\\s*(second|minute|hour|day)s?)$",
+          "description": "Refresh lock interval in time format (e.g., '10m', '1h', '30s')"
+        }
+      }
+    },
+    "email": {
+      "type": "object",
+      "additionalProperties": false,
+      "x-scope": ["admin", "tenant"],
+      "properties": {
+        "smtpServerConfiguration": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "host": {"type": "string"},
+            "port": {"type": "integer", "minimum": 1, "maximum": 65535},
+            "auth": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "user": {"type": "string"},
+                "pass": {"type": "string"}
+              }
+            }
+          }
+        },
+        "contactDefaults": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "from": {"type": "string", "format": "email"},
+            "to": {"type": "string", "format": "email"}
+          }
+        }
+      }
+    },
+    "log": {
+      "type": "object",
+      "additionalProperties": true,
+      "x-scope": "admin",
+      "properties": {
+        "options": {
+          "type": "object",
+          "additionalProperties": true,
+          "properties": {
+            "categories": {
+              "type": "object",
+              "additionalProperties": true,
+              "properties": {
+                "default": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "properties": {
+                    "level": {
+                      "type": "string",
+                      "enum": ["ALL", "TRACE", "DEBUG", "INFO", "WARN", "ERROR", "FATAL", "OFF"],
+                      "description": "Logging level for the application"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "notification": {
+      "type": "object",
+      "additionalProperties": false,
+      "x-scope": ["admin", "tenant"],
+      "properties": {
+        "rules": {
+          "type": "object",
+          "additionalProperties": false,
+          "x-scope": ["admin", "tenant"],
+          "properties": {
+            "licenseExpirationWarning": {
+              "type": "object",
+              "additionalProperties": false,
+              "x-scope": ["admin", "tenant"],
+              "properties": {
+                "enable": {"type": "boolean", "x-scope": ["admin", "tenant"]},
+                "policies": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "x-scope": ["admin", "tenant"],
+                  "properties": {
+                    "repeatInterval": {
+                      "type": "string",
+                      "pattern": "^(\\d+[smhd]|\\d+\\s*(second|minute|hour|day)s?)$",
+                      "description": "Repeat interval in time format (e.g., '1d', '1h', '30m')",
+                      "x-scope": ["admin", "tenant"]
+                    }
+                  }
+                }
+              }
+            },
+            "licenseExpirationError": {
+              "type": "object",
+              "additionalProperties": false,
+              "x-scope": ["admin", "tenant"],
+              "properties": {
+                "enable": {"type": "boolean", "x-scope": ["admin", "tenant"]},
+                "policies": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "x-scope": ["admin", "tenant"],
+                  "properties": {
+                    "repeatInterval": {
+                      "type": "string",
+                      "pattern": "^(\\d+[smhd]|\\d+\\s*(second|minute|hour|day)s?)$",
+                      "description": "Repeat interval in time format (e.g., '1d', '1h', '30m')",
+                      "x-scope": ["admin", "tenant"]
+                    }
+                  }
+                }
+              }
+            },
+            "licenseLimitEdit": {
+              "type": "object",
+              "additionalProperties": false,
+              "x-scope": ["admin", "tenant"],
+              "properties": {
+                "enable": {"type": "boolean", "x-scope": ["admin", "tenant"]},
+                "policies": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "x-scope": ["admin", "tenant"],
+                  "properties": {
+                    "repeatInterval": {
+                      "type": "string",
+                      "pattern": "^(\\d+[smhd]|\\d+\\s*(second|minute|hour|day)s?)$",
+                      "description": "Repeat interval in time format (e.g., '1d', '1h', '30m')",
+                      "x-scope": ["admin", "tenant"]
+                    }
+                  }
+                }
+              }
+            },
+            "licenseLimitLiveViewer": {
+              "type": "object",
+              "additionalProperties": false,
+              "x-scope": ["admin", "tenant"],
+              "properties": {
+                "enable": {"type": "boolean", "x-scope": ["admin", "tenant"]},
+                "policies": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "x-scope": ["admin", "tenant"],
+                  "properties": {
+                    "repeatInterval": {
+                      "type": "string",
+                      "pattern": "^(\\d+[smhd]|\\d+\\s*(second|minute|hour|day)s?)$",
+                      "description": "Repeat interval in time format (e.g., '1d', '1h', '30m')",
+                      "x-scope": ["admin", "tenant"]
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "adminPanel": {
+      "type": "object",
+      "additionalProperties": false,
+      "x-scope": ["admin", "tenant"],
+      "properties": {
+        "passwordValidation": {
+          "type": "object",
+          "x-scope": ["admin", "tenant"],
+          "description": "Password validation requirements using custom format types",
+          "properties": {
+            "minLength": {
+              "$ref": "#/$defs/passlength",
+              "description": "be at least 8 characters long",
+              "x-scope": ["admin", "tenant"]
+            },
+            "hasDigit": {
+              "$ref": "#/$defs/passdigit",
+              "description": "contain at least one digit",
+              "x-scope": ["admin", "tenant"]
+            },
+            "hasUppercase": {
+              "$ref": "#/$defs/passupper",
+              "description": "contain at least one uppercase letter",
+              "x-scope": ["admin", "tenant"]
+            },
+            "hasSpecialChar": {
+              "$ref": "#/$defs/passspecial",
+              "description": "contain at least one special character",
+              "x-scope": ["admin", "tenant"]
+            },
+            "allowedCharactersOnly": {
+              "$ref": "#/$defs/passallowedchars",
+              "description": "contain only uppercase letters (A-Z), lowercase letters (a-z), digits (0-9), and special characters (e.g., ! @ # $ % & *)",
+              "x-scope": ["admin", "tenant"]
+            }
+          }
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,30 @@
+{
+  "name": "fileconverter",
+  "version": "1.0.1",
+  "homepage": "https://www.okaidocs.com",
+  "private": true,
+  "bin": "sources/convertermaster.js",
+  "dependencies": {
+    "@expo/spawn-async": "1.7.2",
+    "bytes": "3.1.2",
+    "co": "4.6.0",
+    "config": "3.3.12",
+    "lcid": "3.1.1",
+    "ms": "2.1.3",
+    "pkijs": "3.2.4",
+    "asn1js": "3.0.5",
+    "@aws-sdk/client-kms": "3.637.0"
+  },
+  "pkg": {
+    "scripts": [
+      "../Common/sources/storage/storage-fs.js",
+      "../Common/sources/storage/storage-s3.js",
+      "../Common/sources/storage/storage-az.js",
+      "../DocService/sources/editorDataMemory.js",
+      "../DocService/sources/editorDataRedis.js"
+    ],
+    "assets": [
+      "../DocService/node_modules/oracledb/build/Release/oracledb-*.node"
+    ]
+  }
+}

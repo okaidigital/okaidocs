@@ -1,0 +1,80 @@
+name: okai-docs-local
+
+services:
+  editor-engine:
+    build:
+      context: ./editor-engine
+      dockerfile: server/Dockerfile.level1
+      args:
+        OKD_EDITOR_BASE_IMAGE: "${OKD_EDITOR_BASE_IMAGE:-ghcr.io/euro-office/documentserver:v9.3.1}"
+    image: okai-docs-engine:level1
+    container_name: okai-docs-engine-local
+    restart: unless-stopped
+    shm_size: "1gb"
+    expose:
+      - "80"
+    environment:
+      JWT_ENABLED: "true"
+      JWT_SECRET: "${OKD_JWT_SECRET:?OKD_JWT_SECRET must be set}"
+      JWT_HEADER: "Authorization"
+      JWT_IN_BODY: "false"
+      ALLOW_PRIVATE_IP_ADDRESS: "true"
+      EXAMPLE_ENABLED: "false"
+      OKD_DISABLE_PLUGINS: "true"
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://localhost/healthcheck | grep -q true"]
+      interval: 30s
+      timeout: 10s
+      retries: 10
+      start_period: 60s
+    volumes:
+      - okai_docs_engine_db:/var/lib/postgresql
+      - okai_docs_engine_rabbitmq:/var/lib/rabbitmq
+      - okai_docs_engine_redis:/var/lib/redis
+
+  editor-demo-gateway:
+    build:
+      context: ./editor-demo-gateway
+      dockerfile: Dockerfile
+    image: okai-docs-demo-gateway:level1
+    container_name: okai-docs-demo-gateway-local
+    restart: unless-stopped
+    depends_on:
+      editor-engine:
+        condition: service_healthy
+    ports:
+      - "127.0.0.1:8093:3000"
+      - "[::1]:8093:3000"
+    environment:
+      OKD_EDITOR_HOST_INTERNAL_URL: "http://editor-demo-gateway:3000"
+      OKD_EDITOR_INTERNAL_URL: "http://editor-engine"
+      OKD_PUBLIC_EDITOR_URL: "${OKD_PUBLIC_EDITOR_URL:-}"
+      OKD_DEMO_ACCESS_TOKEN: "${OKD_DEMO_ACCESS_TOKEN:-}"
+      OKD_DEMO_ACCESS_PARAM: "${OKD_DEMO_ACCESS_PARAM:-okd_access}"
+      OKD_SESSION_PARAM: "${OKD_SESSION_PARAM:-okd_session}"
+      OKD_DEMO_ACCESS_MAX_AGE_SECONDS: "${OKD_DEMO_ACCESS_MAX_AGE_SECONDS:-28800}"
+      OKD_MAX_UPLOAD_BYTES: "${OKD_MAX_UPLOAD_BYTES:-52428800}"
+      OKD_FRAME_ANCESTORS: "${OKD_FRAME_ANCESTORS:-'self' http://localhost:* https://localhost:* https://okai.com.br https://app.okai.com.br https://www.okai.com.br https://okaiedgeqa.azurewebsites.net https://okaiedge.azurewebsites.net}"
+      OKD_JWT_SECRET: "${OKD_JWT_SECRET:?OKD_JWT_SECRET must be set}"
+      OKD_JWT_TTL_SECONDS: "${OKD_JWT_TTL_SECONDS:-3600}"
+    read_only: true
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    tmpfs:
+      - /tmp
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3000/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 10s
+    volumes:
+      - okai_docs_demo_gateway_files:/app/files
+
+volumes:
+  okai_docs_engine_db:
+  okai_docs_engine_rabbitmq:
+  okai_docs_engine_redis:
+  okai_docs_demo_gateway_files:
