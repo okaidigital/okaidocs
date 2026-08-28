@@ -2,6 +2,11 @@ const http = require("http");
 const crypto = require("crypto");
 const fs = require("fs/promises");
 const path = require("path");
+const {
+  gatewayStatusForUpstream,
+  retryDelayMs,
+  shouldRetryCommand,
+} = require("./force-save-policy");
 
 const PORT = Number(process.env.PORT || 3000);
 const ROOT = __dirname;
@@ -1137,30 +1142,47 @@ async function forceSaveBrokerSession(session) {
     token: signJwt(command),
   };
   const target = new URL("/command", EDITOR_INTERNAL_URL);
-  const response = await fetch(target, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify(body),
-  });
-  const text = await response.text();
-  let payload = text;
-  try {
-    payload = JSON.parse(text);
-  } catch {
-    // Keep the raw response for diagnostics.
+  let response;
+  let payload;
+  let onlyOfficeError = null;
+  let attempt = 0;
+
+  while (true) {
+    response = await fetch(target, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(body),
+    });
+    const text = await response.text();
+    payload = text;
+    try {
+      payload = JSON.parse(text);
+    } catch {
+      // Keep the raw response for diagnostics.
+    }
+    onlyOfficeError =
+      payload && typeof payload === "object" && Object.prototype.hasOwnProperty.call(payload, "error")
+        ? Number(payload.error)
+        : null;
+
+    if (!response.ok || !shouldRetryCommand(onlyOfficeError, attempt)) {
+      break;
+    }
+
+    const delayMs = retryDelayMs(attempt);
+    attempt += 1;
+    await new Promise((resolve) => setTimeout(resolve, delayMs));
   }
-  const onlyOfficeError =
-    payload && typeof payload === "object" && Object.prototype.hasOwnProperty.call(payload, "error")
-      ? Number(payload.error)
-      : null;
+
   const ok = response.ok && (onlyOfficeError === null || onlyOfficeError === 0);
   const completedAt = new Date().toISOString();
   const result = {
     ok,
     status: response.status,
     result: payload,
+    attempts: attempt + 1,
     requestedAt,
     completedAt,
   };
@@ -1181,6 +1203,7 @@ async function forceSaveBrokerSession(session) {
     ok,
     status: response.status,
     onlyOfficeError,
+    attempts: result.attempts,
   });
   return result;
 }
@@ -1219,7 +1242,7 @@ async function handleBrokerApi(req, res, url) {
         });
         return forceSaveBrokerSession(session);
       });
-      sendJson(res, result.ok ? 200 : 502, result);
+      sendJson(res, gatewayStatusForUpstream(result.status), result);
       return true;
     }
   }

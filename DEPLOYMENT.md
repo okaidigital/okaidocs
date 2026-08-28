@@ -255,6 +255,15 @@ Authorization: Bearer <OKD_DEMO_ACCESS_TOKEN>
 Then poll `statusUrl` until `version` changes or `lastSavedAt` is set before
 downloading `fileUrl`.
 
+The broker briefly retries DocumentServer command errors `1` (the editor is
+still opening the document) and `4` (no server-side modification observed yet)
+so a Save click immediately after typing does not race the editor's change
+synchronization. If DocumentServer answered the command endpoint over a
+successful HTTP transport, the broker also returns HTTP `200` and preserves the
+logical result in `ok` and `result.error`; HTTP `502` is reserved for an
+upstream HTTP failure. Host platforms must inspect that structured result and
+may treat a final error `4` as a valid no-op after the bounded retries.
+
 This flow requires only outbound HTTPS from the developer machine to
 `docs.okai.com.br`; no developer Docker or per-developer public tunnel is needed.
 
