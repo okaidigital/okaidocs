@@ -5,7 +5,7 @@ ENV PORT=3000
 
 WORKDIR /app
 
-COPY --chown=node:node index.html server.js ./
+COPY --chown=node:node index.html server.js force-save-policy.js ./
 COPY --chown=node:node files ./blank-files
 RUN mkdir -p /app/files && chown node:node /app/files
 
