@@ -1609,7 +1609,7 @@ async function route(req, res) {
     (url.pathname === "/" || directEditorRoutes.has(url.pathname))
   ) {
     const html = await fs.readFile(path.join(ROOT, "index.html"), "utf8");
-    sendEditorHtml(req, res, 200, html);
+    sendEditorHtml(req, res, 200, injectEditorPolicy(html));
     return;
   }
 
@@ -1683,6 +1683,13 @@ async function proxyEditor(req, res, bodyBuffer) {
     "x-forwarded-proto": forwardedProto(req),
   };
 
+  const editorMainHtml = /\/web-apps\/apps\/(?:documenteditor|spreadsheeteditor|presentationeditor|pdfeditor)\/main\/index\.html/i.test(target.pathname);
+  if (editorMainHtml) {
+    // A representação personalizada depende do gateway, não só da revisão do engine.
+    delete requestHeaders["if-none-match"];
+    delete requestHeaders["if-modified-since"];
+  }
+
   if (bodyBuffer) {
     requestHeaders["content-length"] = Buffer.byteLength(bodyBuffer);
   }
@@ -1710,13 +1717,23 @@ async function proxyEditor(req, res, bodyBuffer) {
           };
           delete headers["content-encoding"];
           delete headers["transfer-encoding"];
+          delete headers.etag;
+          delete headers["last-modified"];
+          delete headers.expires;
+          headers["cache-control"] = "no-store";
           res.writeHead(proxyRes.statusCode || 200, editorFrameHeaders(headers));
           res.end(patchedBody);
         });
         return;
       }
 
-      const headers = applyFrameHeaders ? editorFrameHeaders(proxyRes.headers) : proxyRes.headers;
+      const headers = applyFrameHeaders ? editorFrameHeaders(proxyRes.headers) : { ...proxyRes.headers };
+      if (editorMainHtml) {
+        delete headers.etag;
+        delete headers["last-modified"];
+        delete headers.expires;
+        headers["cache-control"] = "no-store";
+      }
       res.writeHead(proxyRes.statusCode || 502, headers);
       proxyRes.pipe(res);
     },
@@ -1750,9 +1767,8 @@ function shouldApplyFrameHeadersToProxiedHtml(req, target, proxyRes) {
   );
 }
 
-function injectEarlyEditorCss(html) {
-  if (html.includes('id="okai-editor-appearance"')) return html;
-  // Antes do bootstrap do ONLYOFFICE: preferências salvas têm precedência sobre o config.
+function injectEditorPolicy(html) {
+  if (html.includes('id="okai-editor-policy"')) return html;
   const policy = `<script id="okai-editor-policy">try {
     for (const [key, value] of Object.entries({
       "ui-theme-id": "theme-light", "content-theme": "light",
@@ -1760,10 +1776,14 @@ function injectEarlyEditorCss(html) {
       "de-hidden-status": "0", "de-hidden-leftmenu": "1"
     })) localStorage.setItem(key, value);
   } catch (_) { /* A configuração também fixa o tema quando o storage é indisponível. */ }</script>`;
+  return /<head\b[^>]*>/i.test(html)
+    ? html.replace(/<head\b[^>]*>/i, (head) => head + policy) : policy + html;
+}
+
+function injectEarlyEditorCss(html) {
+  if (html.includes('id="okai-editor-appearance"')) return html;
   const appearance = '<link id="okai-editor-appearance" rel="stylesheet" href="/web-apps/okai/editor-appearance.css?v=1">';
-  let result = /<head\b[^>]*>/i.test(html)
-    ? html.replace(/<head\b[^>]*>/i, (head) => head + policy)
-    : policy + html;
+  const result = injectEditorPolicy(html);
   const styles = `${earlyEditorCss}\n${appearance}`;
   return /<\/head>/i.test(result)
     ? result.replace(/<\/head>/i, styles + "\n</head>") : styles + result;
