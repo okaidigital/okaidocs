@@ -1770,6 +1770,9 @@ function shouldApplyFrameHeadersToProxiedHtml(req, target, proxyRes) {
 function injectEditorPolicy(html) {
   if (html.includes('id="okai-editor-policy"')) return html;
   const policy = `<script id="okai-editor-policy">try {
+    // Contrato visual do componente de comparação/revisão da plataforma. Não altera permissões.
+    if ((new URLSearchParams(location.search).get("frameEditorId") || "").startsWith("office_comparacao_"))
+      document.documentElement.dataset.okaiInterface = "comparacao";
     for (const [key, value] of Object.entries({
       "ui-theme-id": "theme-light", "content-theme": "light",
       "de-compact-toolbar": "0", "de-view-compact-toolbar": "0",
@@ -1782,7 +1785,7 @@ function injectEditorPolicy(html) {
 
 function injectEarlyEditorCss(html) {
   if (html.includes('id="okai-editor-appearance"')) return html;
-  const appearance = '<link id="okai-editor-appearance" rel="stylesheet" href="/web-apps/okai/editor-appearance.css?v=1">';
+  const appearance = '<link id="okai-editor-appearance" rel="stylesheet" href="/web-apps/okai/editor-appearance.css?v=2">';
   const result = injectEditorPolicy(html);
   const styles = `${earlyEditorCss}\n${appearance}`;
   return /<\/head>/i.test(result)
