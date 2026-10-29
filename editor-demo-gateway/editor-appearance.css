@@ -51,16 +51,16 @@
           .toolbar .box-tabs {
             background: var(--okai-word-panel) !important;
             border-bottom: 0 !important;
-            height: 36px !important;
-            min-height: 36px !important;
-            padding-top: 7px !important;
+            height: 28px !important;
+            min-height: 28px !important;
+            padding-top: 0 !important;
             box-sizing: border-box !important;
           }
 
           #toolbar .tabs,
           .toolbar .tabs {
             position: relative !important;
-            top: 2px !important;
+            top: 0 !important;
             padding-left: 8px !important;
             height: 26px !important;
             min-height: 26px !important;
@@ -135,10 +135,10 @@
             border-top: 0 !important;
             border-bottom: 1px solid var(--okai-word-line) !important;
             border-radius: 0 !important;
-            height: 80px !important;
-            min-height: 80px !important;
-            padding-top: 8px !important;
-            padding-bottom: 8px !important;
+            height: 66px !important;
+            min-height: 66px !important;
+            padding-top: 4px !important;
+            padding-bottom: 4px !important;
             box-sizing: border-box !important;
           }
 
@@ -264,7 +264,8 @@
 
 /* A fonte compartilhada exige entrelinha suficiente para rótulos em duas linhas. */
 #toolbar .btn-slot.x-huge,
-#toolbar .btn.x-huge { height: 58px !important; }
+#toolbar .btn.x-huge { height: 56px !important; }
+#toolbar .x-huge .inner-box-icon { height: 28px !important; }
 #toolbar .x-huge .inner-box-caption { height: 28px !important; }
 #toolbar .x-huge .caption { line-height: 14px !important; }
 
