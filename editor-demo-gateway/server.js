@@ -73,6 +73,7 @@ const earlyEditorCss = `
 `;
 
 const lockedDocumentEditorUi = {
+  uiTheme: "theme-light",
   about: false,
   autosave: true,
   chat: false,
@@ -1651,6 +1652,13 @@ async function route(req, res) {
     return;
   }
 
+  if ((req.method === "GET" || req.method === "HEAD") && url.pathname === "/web-apps/okai/editor-appearance.css") {
+    const css = await fs.readFile(path.join(ROOT, "editor-appearance.css"), "utf8");
+    res.writeHead(200, { "Content-Type": "text/css; charset=utf-8", "Cache-Control": "public, max-age=3600" });
+    res.end(req.method === "HEAD" ? undefined : css);
+    return;
+  }
+
   if ((req.method === "GET" || req.method === "HEAD") && url.pathname === "/health") {
     if (req.method === "HEAD") {
       sendJsonHead(res, 200, { ok: true });
@@ -1743,11 +1751,22 @@ function shouldApplyFrameHeadersToProxiedHtml(req, target, proxyRes) {
 }
 
 function injectEarlyEditorCss(html) {
-  if (html.includes('id="okai-early-editor-look"')) return html;
-  if (/<\/head>/i.test(html)) {
-    return html.replace(/<\/head>/i, `${earlyEditorCss}\n</head>`);
-  }
-  return `${earlyEditorCss}\n${html}`;
+  if (html.includes('id="okai-editor-appearance"')) return html;
+  // Antes do bootstrap do ONLYOFFICE: preferências salvas têm precedência sobre o config.
+  const policy = `<script id="okai-editor-policy">try {
+    for (const [key, value] of Object.entries({
+      "ui-theme-id": "theme-light", "content-theme": "light",
+      "de-compact-toolbar": "0", "de-view-compact-toolbar": "0",
+      "de-hidden-status": "0", "de-hidden-leftmenu": "1"
+    })) localStorage.setItem(key, value);
+  } catch (_) { /* A configuração também fixa o tema quando o storage é indisponível. */ }</script>`;
+  const appearance = '<link id="okai-editor-appearance" rel="stylesheet" href="/web-apps/okai/editor-appearance.css?v=1">';
+  let result = /<head\b[^>]*>/i.test(html)
+    ? html.replace(/<head\b[^>]*>/i, (head) => head + policy)
+    : policy + html;
+  const styles = `${earlyEditorCss}\n${appearance}`;
+  return /<\/head>/i.test(result)
+    ? result.replace(/<\/head>/i, styles + "\n</head>") : styles + result;
 }
 
 function proxyEditorUpgrade(req, socket, head) {
