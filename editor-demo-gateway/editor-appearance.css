@@ -261,3 +261,14 @@
 #slot-chk-toolbar, #slot-chk-statusbar, #slot-chk-leftmenu,
 .group:has(#slot-btn-interface-theme), .group:has(#slot-chk-toolbar),
 .elset:has(#slot-chk-leftmenu), .separator-theme { display: none !important; }
+
+/* A fonte compartilhada exige entrelinha suficiente para rótulos em duas linhas. */
+#toolbar .btn-slot.x-huge,
+#toolbar .btn.x-huge { height: 58px !important; }
+#toolbar .x-huge .inner-box-caption { height: 28px !important; }
+#toolbar .x-huge .caption { line-height: 14px !important; }
+
+/* A ferramenta já escolheu os documentos: não abre fluxos concorrentes dentro do editor. */
+html[data-okai-interface="comparacao"] #review-changes-panel .group:has(#slot-btn-compare),
+html[data-okai-interface="comparacao"] #review-changes-panel .group:has(#slot-btn-mailrecepients),
+html[data-okai-interface="comparacao"] #review-changes-panel .separator.compare { display: none !important; }
