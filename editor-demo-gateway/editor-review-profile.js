@@ -1,5 +1,29 @@
 /* Perfil da revisão da plataforma: usa os eventos e o layout nativos do editor. */
 (function (root) {
+  // Configura os textos dos próprios componentes, também no editor comum.
+  function installReviewLabels(win) {
+    if (!/\/documenteditor\//.test(win.location.pathname)) return;
+    const lang = new URLSearchParams(win.location.search).get('lang') || '';
+    if (!/^pt(?:[-_]|$)/i.test(lang)) return;
+    const observer = new win.MutationObserver(prepare);
+    function prepare() {
+      const app = win.DE;
+      if (!app?.getController) return;
+      const view = app.getController('Common.Controllers.ReviewChanges')?.getView();
+      if (!view?.btnPrev?.rendered || !view?.btnNext?.rendered) return;
+      observer.disconnect();
+      view.txtPrev = view.hintPrev = 'Alteração anterior';
+      view.txtNext = view.hintNext = 'Próxima alteração';
+      view.btnPrev.setCaption(view.txtPrev);
+      view.btnPrev.updateHint(view.hintPrev);
+      view.btnNext.setCaption(view.txtNext);
+      view.btnNext.updateHint(view.hintNext);
+    }
+    observer.observe(win.document.documentElement, { childList: true, subtree: true });
+    win.addEventListener('pagehide', () => observer.disconnect(), { once: true });
+    prepare();
+  }
+
   function installReviewProfile(win) {
     const frame = new URLSearchParams(win.location.search).get('frameEditorId') || '';
     if (!frame.startsWith('office_revisao_')) return () => {};
@@ -64,5 +88,5 @@
     return cleanup;
   }
   if (typeof module === 'object' && module.exports) module.exports = { installReviewProfile };
-  else installReviewProfile(root);
+  else { installReviewLabels(root); installReviewProfile(root); }
 })(typeof window === 'undefined' ? null : window);
