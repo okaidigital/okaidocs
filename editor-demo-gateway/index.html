@@ -553,8 +553,10 @@
           editor = null;
         }
 
-        host.innerHTML = '<div id="editor"></div>';
-        editor = new DocsAPI.DocEditor("editor", config);
+        // Cada abertura precisa de um frame próprio, inclusive após atualizar o gateway.
+        const editorId = "okai_editor_" + crypto.randomUUID().replaceAll("-", "");
+        host.innerHTML = `<div id="editor"><div id="${editorId}"></div></div>`;
+        editor = new DocsAPI.DocEditor(editorId, config);
         scheduleEditorPostLoadControls();
       }
 
