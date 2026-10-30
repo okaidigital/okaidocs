@@ -1652,6 +1652,13 @@ async function route(req, res) {
     return;
   }
 
+  if ((req.method === "GET" || req.method === "HEAD") && url.pathname === "/web-apps/okai/editor-review-profile.js") {
+    const js = await fs.readFile(path.join(ROOT, "editor-review-profile.js"), "utf8");
+    res.writeHead(200, { "Content-Type": "application/javascript; charset=utf-8", "Cache-Control": "public, max-age=3600" });
+    res.end(req.method === "HEAD" ? undefined : js);
+    return;
+  }
+
   if ((req.method === "GET" || req.method === "HEAD") && url.pathname === "/web-apps/okai/editor-appearance.css") {
     const css = await fs.readFile(path.join(ROOT, "editor-appearance.css"), "utf8");
     res.writeHead(200, { "Content-Type": "text/css; charset=utf-8", "Cache-Control": "public, max-age=3600" });
@@ -1773,6 +1780,8 @@ function injectEditorPolicy(html) {
     // Contrato visual do componente de comparação/revisão da plataforma. Não altera permissões.
     if ((new URLSearchParams(location.search).get("frameEditorId") || "").startsWith("office_comparacao_"))
       document.documentElement.dataset.okaiInterface = "comparacao";
+    if ((new URLSearchParams(location.search).get("frameEditorId") || "").startsWith("office_revisao_"))
+      document.documentElement.dataset.okaiInterface = "revisao";
     for (const [key, value] of Object.entries({
       "ui-theme-id": "theme-light", "content-theme": "light",
       "de-compact-toolbar": "0", "de-view-compact-toolbar": "0",
@@ -1785,9 +1794,9 @@ function injectEditorPolicy(html) {
 
 function injectEarlyEditorCss(html) {
   if (html.includes('id="okai-editor-appearance"')) return html;
-  const appearance = '<link id="okai-editor-appearance" rel="stylesheet" href="/web-apps/okai/editor-appearance.css?v=3">';
+  const appearance = '<link id="okai-editor-appearance" rel="stylesheet" href="/web-apps/okai/editor-appearance.css?v=4">';
   const result = injectEditorPolicy(html);
-  const styles = `${earlyEditorCss}\n${appearance}`;
+  const styles = `${earlyEditorCss}\n${appearance}\n<script defer src="/web-apps/okai/editor-review-profile.js?v=1"></script>`;
   return /<\/head>/i.test(result)
     ? result.replace(/<\/head>/i, styles + "\n</head>") : styles + result;
 }

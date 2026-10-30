@@ -263,13 +263,18 @@
 .elset:has(#slot-chk-leftmenu), .separator-theme { display: none !important; }
 
 /* A fonte compartilhada exige entrelinha suficiente para rótulos em duas linhas. */
-#toolbar .btn-slot.x-huge,
 #toolbar .btn.x-huge { height: 56px !important; }
 #toolbar .x-huge .inner-box-icon { height: 28px !important; }
 #toolbar .x-huge .inner-box-caption { height: 28px !important; }
 #toolbar .x-huge .caption { line-height: 14px !important; }
 
 /* A ferramenta já escolheu os documentos: não abre fluxos concorrentes dentro do editor. */
-html[data-okai-interface="comparacao"] #review-changes-panel .group:has(#slot-btn-compare),
-html[data-okai-interface="comparacao"] #review-changes-panel .group:has(#slot-btn-mailrecepients),
-html[data-okai-interface="comparacao"] #review-changes-panel .separator.compare { display: none !important; }
+html:is([data-okai-interface="comparacao"], [data-okai-interface="revisao"]) #review-changes-panel .group:has(#slot-btn-compare),
+html:is([data-okai-interface="comparacao"], [data-okai-interface="revisao"]) #review-changes-panel .group:has(#slot-btn-mailrecepients),
+html:is([data-okai-interface="comparacao"], [data-okai-interface="revisao"]) #review-changes-panel .separator.compare { display: none !important; }
+
+/* Nesta ferramenta o usuário decide as revisões; não troca de fluxo ou de modo. */
+html[data-okai-interface="revisao"] #toolbar .box-tabs,
+html[data-okai-interface="revisao"] #toolbar .box-controls .panel:not(#review-changes-panel),
+html[data-okai-interface="revisao"] #review-changes-panel > :not(.move-changes),
+html[data-okai-interface="revisao"] #statusbar .btn-group:has(.btn-ic-review) { display: none !important; }
