@@ -283,3 +283,9 @@ html[data-okai-interface="revisao"] #statusbar .btn-group:has(.btn-ic-review) { 
 /* A linha inferior pertence ao pseudo-elemento nativo; não sobrepor outra borda. */
 #toolbar .box-controls::before { box-shadow: 0 1px 0 0 var(--okai-word-line) !important; }
 html[data-okai-viewer] #toolbar .box-controls .panel:not([data-tab="view"]) { display: none !important; }
+
+/* Sem abas, a altura visual e o VBoxLayout devem reservar somente os controles. */
+html:is([data-okai-viewer], [data-okai-interface="revisao"]) :is(#toolbar, #toolbar .toolbar) {
+  height: 66px !important;
+  min-height: 66px !important;
+}
