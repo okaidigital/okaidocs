@@ -23,7 +23,10 @@
           || typeof api?.asc_SetLocalTrackRevisions !== 'function') return;
       installed = true;
       observer.disconnect();
-      const restrictTab = tab => { if (tab !== 'review') toolbar.setTab('review'); };
+      const restrictTab = tab => {
+        const active = Array.isArray(tab) ? tab[0] : tab;
+        if (active !== 'review') toolbar.setTab('review');
+      };
       const maintainTracking = (local, global) => {
         if (!(local === null ? global : local)) api.asc_SetLocalTrackRevisions(true);
       };
