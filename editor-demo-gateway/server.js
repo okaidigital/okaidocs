@@ -1782,6 +1782,8 @@ function injectEditorPolicy(html) {
       document.documentElement.dataset.okaiInterface = "comparacao";
     if ((new URLSearchParams(location.search).get("frameEditorId") || "").startsWith("office_revisao_"))
       document.documentElement.dataset.okaiInterface = "revisao";
+    if (document.documentElement.dataset.okaiInterface === "comparacao" && new URLSearchParams(location.search).get("mode") === "view")
+      document.documentElement.dataset.okaiViewer = "true";
     for (const [key, value] of Object.entries({
       "ui-theme-id": "theme-light", "content-theme": "light",
       "de-compact-toolbar": "0", "de-view-compact-toolbar": "0",
@@ -1794,9 +1796,9 @@ function injectEditorPolicy(html) {
 
 function injectEarlyEditorCss(html) {
   if (html.includes('id="okai-editor-appearance"')) return html;
-  const appearance = '<link id="okai-editor-appearance" rel="stylesheet" href="/web-apps/okai/editor-appearance.css?v=5">';
+  const appearance = '<link id="okai-editor-appearance" rel="stylesheet" href="/web-apps/okai/editor-appearance.css?v=6">';
   const result = injectEditorPolicy(html);
-  const styles = `${earlyEditorCss}\n${appearance}\n<script defer src="/web-apps/okai/editor-review-profile.js?v=5"></script>`;
+  const styles = `${earlyEditorCss}\n${appearance}\n<script defer src="/web-apps/okai/editor-review-profile.js?v=6"></script>`;
   return /<\/head>/i.test(result)
     ? result.replace(/<\/head>/i, styles + "\n</head>") : styles + result;
 }
