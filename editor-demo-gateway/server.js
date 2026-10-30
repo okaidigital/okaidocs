@@ -1794,7 +1794,7 @@ function injectEditorPolicy(html) {
 
 function injectEarlyEditorCss(html) {
   if (html.includes('id="okai-editor-appearance"')) return html;
-  const appearance = '<link id="okai-editor-appearance" rel="stylesheet" href="/web-apps/okai/editor-appearance.css?v=4">';
+  const appearance = '<link id="okai-editor-appearance" rel="stylesheet" href="/web-apps/okai/editor-appearance.css?v=5">';
   const result = injectEditorPolicy(html);
   const styles = `${earlyEditorCss}\n${appearance}\n<script defer src="/web-apps/okai/editor-review-profile.js?v=3"></script>`;
   return /<\/head>/i.test(result)
