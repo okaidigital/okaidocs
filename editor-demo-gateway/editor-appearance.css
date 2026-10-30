@@ -276,5 +276,5 @@ html:is([data-okai-interface="comparacao"], [data-okai-interface="revisao"]) #re
 /* Nesta ferramenta o usuário decide as revisões; não troca de fluxo ou de modo. */
 html[data-okai-interface="revisao"] #toolbar .box-tabs,
 html[data-okai-interface="revisao"] #toolbar .box-controls .panel:not(#review-changes-panel),
-html[data-okai-interface="revisao"] #review-changes-panel > :not(.move-changes),
+html[data-okai-interface="revisao"] :is(#review-changes-panel, .more-container[data-tab="review"]) :is(.group:not(.move-changes), .separator),
 html[data-okai-interface="revisao"] #statusbar .btn-group:has(.btn-ic-review) { display: none !important; }
