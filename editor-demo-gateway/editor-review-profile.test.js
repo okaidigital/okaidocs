@@ -2,7 +2,7 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const { EventEmitter } = require('node:events');
-const { installReviewProfile } = require('./editor-review-profile');
+const { installReviewProfile, installReviewLabels } = require('./editor-review-profile');
 
 function editor(frame = 'office_revisao_teste', docReady = true) {
   const toolbar = new EventEmitter();
@@ -85,4 +85,23 @@ test('preserva o editor comum e a comparação estática', () => {
     assert.equal(e.settings.size, 0);
     assert.equal(e.apiEvents.eventNames().length, 0);
   }
+});
+
+// Regressão material: o getter nativo ainda não está disponível no início do bootstrap.
+test('aguarda os controles renderizados antes de consultar a view nativa', () => {
+  const e = editor();
+  let rendered = false, reads = 0, updates = 0;
+  const button = () => ({ rendered: true, setCaption() { updates++; }, updateHint() { updates++; } });
+  const view = { btnPrev: button(), btnNext: button() };
+  e.win.location = { pathname: '/web-apps/apps/documenteditor/main/index.html', search: '?lang=pt' };
+  e.win.document.querySelector = () => rendered ? {} : null;
+  e.win.DE.getController = () => ({ getView() { reads++; if (!rendered) throw new Error('View indisponível durante bootstrap'); return view; } });
+  installReviewLabels(e.win);
+  e.observe();
+  assert.equal(reads, 0);
+  assert.equal(updates, 0);
+  rendered = true;
+  e.observe();
+  assert.equal(reads, 1);
+  assert.equal(updates, 4);
 });

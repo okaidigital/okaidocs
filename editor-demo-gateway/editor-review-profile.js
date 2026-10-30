@@ -7,6 +7,9 @@
     if (!/^pt(?:[-_]|$)/i.test(lang)) return;
     const observer = new win.MutationObserver(prepare);
     function prepare() {
+      // A view só pode ser consultada depois que seus controles forem renderizados.
+      if (!win.document.querySelector('#btn-change-prev button')
+          || !win.document.querySelector('#btn-change-next button')) return;
       const app = win.DE;
       if (!app?.getController) return;
       const view = app.getController('Common.Controllers.ReviewChanges')?.getView();
@@ -87,6 +90,6 @@
     prepare();
     return cleanup;
   }
-  if (typeof module === 'object' && module.exports) module.exports = { installReviewProfile };
+  if (typeof module === 'object' && module.exports) module.exports = { installReviewProfile, installReviewLabels };
   else { installReviewLabels(root); installReviewProfile(root); }
 })(typeof window === 'undefined' ? null : window);
