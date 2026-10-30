@@ -12,7 +12,7 @@ function editor(frame = 'office_revisao_teste', docReady = true) {
   const item = { height: 94 };
   let tracking = false, display = 'final', ready = true, observe;
   toolbar.getTab = () => ready ? { length: 1 } : undefined;
-  toolbar.setTab = tab => { toolbar.selected = tab; toolbar.emit('tab:active', tab); };
+  toolbar.setTab = tab => { toolbar.selected = tab; toolbar.emit('tab:active', [tab]); center.emit('tab:active', tab); };
   center.trigger = center.emit.bind(center);
   const api = {
     asc_SetLocalTrackRevisions(value) { tracking = value; apiEvents.emit('asc_onOnTrackRevisionsChange', value, false); },

@@ -43,11 +43,11 @@
         api.asc_SetLocalTrackRevisions(true);
         api.asc_SetDisplayModeInReview(win.Asc.c_oAscDisplayModeInReview.Edit);
       });
-      toolbar.on('tab:active', restrictTab);
+      center.on('tab:active', restrictTab);
       center.on('app:ready', ready);
       api.asc_registerCallback('asc_onOnTrackRevisionsChange', maintainTracking);
       removeNativeEvents = () => {
-        toolbar.off('tab:active', restrictTab);
+        center.off('tab:active', restrictTab);
         center.off('app:ready', ready);
         api.asc_unregisterCallback('asc_onOnTrackRevisionsChange', maintainTracking);
       };
