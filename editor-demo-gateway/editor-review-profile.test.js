@@ -2,7 +2,7 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const { EventEmitter } = require('node:events');
-const { installReviewProfile, installReviewLabels } = require('./editor-review-profile');
+const { installReviewProfile, installReviewLabels, installSearchInRibbon } = require('./editor-review-profile');
 
 function editor(frame = 'office_revisao_teste', docReady = true) {
   const toolbar = new EventEmitter();
@@ -104,4 +104,39 @@ test('aguarda os controles renderizados antes de consultar a view nativa', () =>
   e.observe();
   assert.equal(reads, 1);
   assert.equal(updates, 4);
+});
+
+test('visualizador mantém os controles de Exibir sem abas e sem ativar rastreamento', async () => {
+  const e = editor('office_comparacao_teste');
+  e.win.location.search += '&mode=view';
+  const cleanup = installReviewProfile(e.win);
+  await Promise.resolve();
+  assert.equal(e.toolbar.selected, 'view');
+  assert.equal(e.item.height, 66);
+  assert.equal(e.tracking(), false);
+  assert.equal(e.apiEvents.listenerCount('asc_onOnTrackRevisionsChange'), 0);
+  cleanup();
+});
+
+test('pesquisa continua sendo o botão nativo com seu estado de ligar e desligar', () => {
+  const e = editor('office_comparacao_teste');
+  e.win.location.search += '&mode=view';
+  const classes = new Set(['btn-header']);
+  const button = { classList: { add: x => classes.add(x), remove: x => classes.delete(x) } };
+  const slot = { classList: { add() {} }, querySelector: () => button };
+  function element() { return { children: [], appendChild(child) { this.children.push(child); return child; } }; }
+  const panel = element();
+  let caption;
+  const native = { rendered: true, pressed: true, setCaption(value) { caption = value; } };
+  e.win.DE.getController('Viewport').header = { btnSearch: native };
+  e.win.document.getElementById = () => slot;
+  e.win.document.querySelector = () => panel;
+  e.win.document.createElement = element;
+  installSearchInRibbon(e.win);
+  assert.equal(panel.children.length, 1);
+  assert.equal(panel.children[0].children[0].children[0], slot);
+  assert.equal(caption, 'Pesquisar');
+  assert.equal(native.pressed, true);
+  assert.equal(classes.has('btn-toolbar'), true);
+  assert.equal(classes.has('btn-header'), false);
 });

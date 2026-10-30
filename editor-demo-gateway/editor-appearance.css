@@ -133,7 +133,7 @@
           .toolbar .box-controls {
             background: var(--okai-word-panel) !important;
             border-top: 0 !important;
-            border-bottom: 1px solid var(--okai-word-line) !important;
+            border-bottom: 0 !important;
             border-radius: 0 !important;
             height: 66px !important;
             min-height: 66px !important;
@@ -274,7 +274,12 @@ html:is([data-okai-interface="comparacao"], [data-okai-interface="revisao"]) #re
 html:is([data-okai-interface="comparacao"], [data-okai-interface="revisao"]) #review-changes-panel .separator.compare { display: none !important; }
 
 /* Nesta ferramenta o usuário decide as revisões; não troca de fluxo ou de modo. */
+html[data-okai-viewer] #toolbar .box-tabs,
 html[data-okai-interface="revisao"] #toolbar .box-tabs,
 html[data-okai-interface="revisao"] #toolbar .box-controls .panel:not(#review-changes-panel),
-html[data-okai-interface="revisao"] :is(#review-changes-panel, .more-container[data-tab="review"]) :is(.group:not(.move-changes), .separator),
+html[data-okai-interface="revisao"] :is(#review-changes-panel, .more-container[data-tab="review"]) :is(.group:not(.move-changes):not(.okai-search-group), .separator),
 html[data-okai-interface="revisao"] #statusbar .btn-group:has(.btn-ic-review) { display: none !important; }
+
+/* A linha inferior pertence ao pseudo-elemento nativo; não sobrepor outra borda. */
+#toolbar .box-controls::before { box-shadow: 0 1px 0 0 var(--okai-word-line) !important; }
+html[data-okai-viewer] #toolbar .box-controls .panel:not([data-tab="view"]) { display: none !important; }
