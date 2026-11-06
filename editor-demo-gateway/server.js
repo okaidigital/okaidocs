@@ -9,6 +9,7 @@ const {
 } = require("./force-save-policy");
 
 const { buildComparisonCommand } = require("./comparison-command");
+const { hasSignedEditorDownload } = require("./editor-download-auth");
 
 const PORT = Number(process.env.PORT || 3000);
 const ROOT = __dirname;
@@ -1581,6 +1582,10 @@ function hasValidCommandToken(bodyBuffer) {
 
 async function route(req, res) {
   const url = new URL(req.url, `http://${req.headers.host}`);
+  if (hasSignedEditorDownload(req, url, verifyJwt)) {
+    await proxyEditor(req, res);
+    return;
+  }
   if (isCommandRoute(req, url)) {
     const bodyBuffer = await readRequestBuffer(req);
     if (!hasValidCommandToken(bodyBuffer)) {
