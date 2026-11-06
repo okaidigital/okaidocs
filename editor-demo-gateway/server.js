@@ -8,6 +8,8 @@ const {
   shouldRetryCommand,
 } = require("./force-save-policy");
 
+const { buildComparisonCommand } = require("./comparison-command");
+
 const PORT = Number(process.env.PORT || 3000);
 const ROOT = __dirname;
 const FILES_DIR = path.join(ROOT, "files");
@@ -1229,6 +1231,16 @@ async function handleBrokerApi(req, res, url) {
     const result = await createOrReuseBrokerSession(input);
     sendJson(res, result.created ? 201 : 200, brokerSessionToResponse(req, result.session, result.user));
     return true;
+  }
+
+  if (req.method === "POST") {
+    const id = brokerApiSessionId(url.pathname, "/comparison");
+    if (id) {
+      const session = await loadBrokerSession(id);
+      await fs.stat(brokerSessionFilePath(session));
+      sendJson(res, 200, buildComparisonCommand(session, EDITOR_HOST_INTERNAL_URL, signJwt));
+      return true;
+    }
   }
 
   if (req.method === "POST") {
