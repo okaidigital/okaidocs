@@ -263,10 +263,10 @@
 .elset:has(#slot-chk-leftmenu), .separator-theme { display: none !important; }
 
 /* A fonte compartilhada exige entrelinha suficiente para rótulos em duas linhas. */
-#toolbar .btn.x-huge { height: 56px !important; }
+#toolbar :is(.btn, .btn-group).x-huge { height: 56px !important; }
 #toolbar .x-huge .inner-box-icon { height: 28px !important; }
-#toolbar .x-huge .inner-box-caption { height: 28px !important; }
-#toolbar .x-huge .caption { line-height: 14px !important; }
+#toolbar .x-huge .inner-box-caption { height: 28px !important; flex-shrink: 0; }
+#toolbar .x-huge .caption { line-height: 14px !important; max-height: 28px; }
 
 /* A ferramenta já escolheu os documentos: não abre fluxos concorrentes dentro do editor. */
 html:is([data-okai-interface="comparacao"], [data-okai-interface="revisao"]) #review-changes-panel .group:has(#slot-btn-compare),
